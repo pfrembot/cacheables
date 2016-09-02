@@ -1,0 +1,29 @@
+{
+    "name": "pfrembot/cacheables",
+    "type": "library",
+    "description": "Abstraction library for caching hierarchical data structures",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Pfrembot\\Cacheables\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Pfrembot\\Cacheables\\Tests\\": "tests/"
+        },
+        "files": [
+            "tests/_mocks/classes.php"
+        ]
+    },
+    "require": {
+        "tebru/filter-null": "^0.1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^5.5",
+        "epfremme/collections": "^1.0"
+    },
+    "config": {
+        "bin-dir": "bin"
+    }
+}
