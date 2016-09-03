@@ -4,50 +4,9 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "3cdbc75d2d38e8caa9d5a8d0bcd49a3b",
-    "content-hash": "b255c579a62f41a7474a3f9fbf021155",
-    "packages": [
-        {
-            "name": "tebru/filter-null",
-            "version": "v0.1.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/tebru/filter-null.git",
-                "reference": "55447df198b96c8f9f6e6a35b4887e13429495a3"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/tebru/filter-null/zipball/55447df198b96c8f9f6e6a35b4887e13429495a3",
-                "reference": "55447df198b96c8f9f6e6a35b4887e13429495a3",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">= 5.4"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^4.0",
-                "satooshi/php-coveralls": "^1.0"
-            },
-            "type": "library",
-            "autoload": {
-                "files": [
-                    "src/filter_null.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Nate Brunette",
-                    "email": "n@tebru.net"
-                }
-            ],
-            "description": "Remove all nulls from an array",
-            "time": "2016-05-23 19:28:51"
-        }
-    ],
+    "hash": "1fec2e4551f2191131f60c52b687ba3f",
+    "content-hash": "8d1d0b163788e23547cac463ac4e1244",
+    "packages": [],
     "packages-dev": [
         {
             "name": "doctrine/instantiator",
