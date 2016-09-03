@@ -16,10 +16,19 @@
             "tests/_mocks/classes.php"
         ]
     },
-    "require": { },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/pfrembot/identity"
+        }
+    ],
+    "require": {
+
+    },
     "require-dev": {
         "phpunit/phpunit": "^5.5",
-        "epfremme/collections": "^1.0"
+        "epfremme/collections": "^1.0",
+        "pfrembot/identity": "^1.0"
     },
     "config": {
         "bin-dir": "bin"

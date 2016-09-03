@@ -9,36 +9,32 @@ namespace Pfrembot\Cacheables\Tests\Mocks;
 
 use Epfremme\Collection\Collection;
 use Pfrembot\Cacheables\AbstractCacheable;
-use Pfrembot\Cacheables\CacheableInterface;
 use Pfrembot\Cacheables\CacheInterface;
-
-function id($id = 0)
-{
-    while (true) {
-        yield ++$id;
-    }
-}
+use Pfrembot\Identity\IdentityStrategyInterface;
+use Pfrembot\Identity\Strategy\IncrementalStrategy;
+use Pfrembot\Identity\Strategy\PersistentStrategy;
 
 /**
+ * Class PHPCacheKeyTrait
+ *
  * @property string $key
+ * @package Pfrembot\Cacheables\Tests\Mocks
  */
 trait PHPCacheKeyTrait
 {
     /**
-     * @var \Generator
+     * @var IdentityStrategyInterface
      */
-    private static $generator;
+    private $generator;
 
     /**
      * {@inheritdoc}
      */
     public function getKey()
     {
-        if ($this->key) {
-            return $this->key;
+        if (!$this->key) {
+            $this->key = 'php_' . __CLASS__ . $this->getId();
         }
-
-        $this->key = 'php_' . __CLASS__ . $this->getId();
 
         return $this->key;
     }
@@ -50,18 +46,23 @@ trait PHPCacheKeyTrait
      */
     private function getId()
     {
-        if (!static::$generator) {
-            static::$generator = id();
+        if (!$this->generator) {
+            $this->generator = new PersistentStrategy(new IncrementalStrategy(1));
         }
 
         try {
-            return static::$generator->current();
+            return $this->generator->current();
         } finally {
-            static::$generator->next();
+            $this->generator->next();
         }
     }
 }
 
+/**
+ * Class SimpleCacheable
+ *
+ * @package Pfrembot\Cacheables\Tests\Mocks
+ */
 class SimpleCacheable extends AbstractCacheable
 {
     use PHPCacheKeyTrait;
@@ -77,6 +78,11 @@ class SimpleCacheable extends AbstractCacheable
     }
 }
 
+/**
+ * Class ComplexCacheable
+ *
+ * @package Pfrembot\Cacheables\Tests\Mocks
+ */
 class ComplexCacheable extends AbstractCacheable
 {
     use PHPCacheKeyTrait;
@@ -99,6 +105,11 @@ class ComplexCacheable extends AbstractCacheable
     }
 }
 
+/**
+ * Class InvalidCacheable
+ *
+ * @package Pfrembot\Cacheables\Tests\Mocks
+ */
 class InvalidCacheable
 {
     private $data;
@@ -114,6 +125,11 @@ class InvalidCacheable
     }
 }
 
+/**
+ * Class MockCache
+ *
+ * @package Pfrembot\Cacheables\Tests\Mocks
+ */
 class MockCache extends Collection implements CacheInterface
 {
     public function exists($key)
