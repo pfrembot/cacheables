@@ -50,7 +50,7 @@ class AbstractCacheableTest extends PHPUnit_Framework_TestCase
         /** @var AbstractCacheable $cacheable */
         $cacheable = $this->getMockForAbstractClass(AbstractCacheable::class, ['data', $children]);
 
-        $this->assertSame($children, $cacheable->getChildren());
+        $this->assertSame($children, $cacheable->getChildKeys());
     }
 
     public function testGetChildKeys()

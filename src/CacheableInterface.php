@@ -31,17 +31,16 @@ interface CacheableInterface
     public function getData();
 
     /**
-     * Return array of child or related cacheable
-     * objects for this cacheable entity
+     * Return array of cacheable child elements
      *
      * @return CacheableInterface[]
      */
     public function getChildren();
 
     /**
-     * Return array of all child object cache keys
+     * Return array of cacheable parent elements
      *
-     * @return string[]
+     * @return CacheableInterface[]
      */
-    public function getChildKeys();
+    public function getParents();
 }

@@ -6,8 +6,13 @@
  */
 namespace Pfrembot\Cacheables\Adapter;
 
-use Pfrembot\Cacheables\CacheInterface;
-use Pfrembot\Cacheables\Entity\CacheEntry;
+use Exception\InvalidCacheItemException;
+use Pfrembot\Cacheables\CacheableInterface;
+use Pfrembot\Cacheables\Entity\CacheData;
+use Pfrembot\Cacheables\Entity\CacheItem;
+use Pfrembot\Cacheables\Entity\StaleCacheItem;
+use Psr\Cache\CacheItemInterface;
+use Psr\Cache\CacheItemPoolInterface;
 
 /**
  * Class CacheAdapter
@@ -17,16 +22,16 @@ use Pfrembot\Cacheables\Entity\CacheEntry;
 final class CacheAdapter
 {
     /**
-     * @var CacheInterface
+     * @var CacheItemPoolInterface
      */
     private $cache;
 
     /**
      * CacheAdapter constructor
      *
-     * @param CacheInterface $cache
+     * @param CacheItemPoolInterface $cache
      */
-    public function __construct(CacheInterface $cache)
+    public function __construct(CacheItemPoolInterface $cache)
     {
         $this->cache = $cache;
     }
@@ -39,27 +44,23 @@ final class CacheAdapter
      */
     public function exists($key)
     {
-        return (bool) $this->cache->exists($key);
+        return $this->cache->hasItem($key);
     }
 
     /**
      * Return cache object from the cache
      *
      * @param string $key
-     * @return CacheEntry|false
+     * @return CacheItem
      */
     public function get($key)
     {
-        if (!$this->exists($key)) {
-            return false;
-        }
+        $innerItem = $this->cache->getItem($key);
 
-        $data = $this->cache->get($key);
+        $cacheItem = new CacheItem();
+        $cacheItem->setInner($innerItem);
 
-        $cacheEntry = new CacheEntry();
-        $cacheEntry->unserialize($data);
-
-        return $cacheEntry;
+        return $cacheItem;
     }
 
     /**
@@ -68,30 +69,51 @@ final class CacheAdapter
      * Also updates existing cached objects with
      * parental and child references
      *
-     * @param CacheEntry $cacheEntry
+     * @param CacheItemInterface $cacheItem
+     * @return bool
      */
-    public function store(CacheEntry $cacheEntry)
+    public function store($cacheItem)
     {
-        $cacheable = $cacheEntry->getCacheable();
-        $cacheKey = $cacheable->getKey();
+        if (!$cacheItem instanceof CacheItemInterface) {
+            throw new InvalidCacheItemException($cacheItem);
+        }
 
-        if ($this->exists($cacheKey)) {
-            $cached = $this->get($cacheKey);
+        if (!$cacheItem instanceof CacheItem) {
+            return $this->cache->saveDeferred($cacheItem);
+        }
 
-            foreach ($cached->getParents() as $parentKey) {
-                $this->remove($parentKey);
+        if ($cacheItem->isHit()) {
+            foreach ($cacheItem->getParents() as $parent) {
+                $this->invalidate($parent);
             }
         }
 
-        foreach ($cacheable->getChildren() as $child) {
-            $entry = new CacheEntry($child, $child->getChildKeys(), [$cacheKey]);
-            $entry->setCacheable($child);
-            $entry->setParents([$cacheKey]);
-
-            $this->update($entry);
+        if ($cacheable = $cacheItem->getCacheable()) {
+            foreach ($cacheable->getChildren() as $child) {
+                $this->update($child, $cacheable);
+            }
         }
 
-        $this->cache->store($cacheKey, $cacheEntry->serialize());
+        return $this->cache->saveDeferred($cacheItem->getInner());
+    }
+
+    /**
+     * @param CacheableInterface $cacheable
+     */
+    private function update(CacheableInterface $cacheable, CacheableInterface $parent)
+    {
+        $cacheItem = $this->get($cacheable->getKey());
+        $cacheItem->setCacheable($cacheable);
+
+        if (!in_array($parent->getKey(), $cacheItem->getParents())) {
+            $cacheItem->setParents([$parent->getKey()]);
+        }
+
+        foreach ($cacheable->getChildren() as $child) {
+            $this->update($child, $cacheable);
+        }
+
+        $this->cache->saveDeferred($cacheItem->getInner());
     }
 
     /**
@@ -101,42 +123,47 @@ final class CacheAdapter
      * cache will need to be reconciled post this operation
      *
      * @param string $key
+     * @return bool
      */
     public function remove($key)
     {
-        $cacheEntry = $this->get($key);
+        $cacheItem = $this->get($key);
 
-        if (!$cacheEntry) {
-            return;
+        if (!$cacheItem->isHit()) {
+            return false;
         }
 
-        foreach ($cacheEntry->getParents() as $parentKey) {
-            $this->remove($parentKey);
-        }
-
-        $this->cache->remove($key);
+        return $this->invalidate($cacheItem->getKey());
     }
 
     /**
-     * Update and store a cache object
+     * Replace existing cache item with stale cache entry
      *
-     * Updates existing cached object if exists or
-     * creates a new object if none were found
+     * Stale entry can be used later to re-prime the cache with
+     * fresh data based on potential cached child item data
      *
-     * @param CacheEntry $cacheEntry
+     * @param string $key
+     * @return bool
      */
-    private function update(CacheEntry $cacheEntry)
+    private function invalidate($key)
     {
-        $cacheable = $cacheEntry->getCacheable();
-        $cacheKey = $cacheable->getKey();
+        $cacheItem = $this->get($key);
 
-        if ($this->exists($cacheKey)) {
-            $target = $this->get($cacheKey);
-            $target->update($cacheEntry);
-        } else {
-            $target = $cacheEntry;
+        if (!$cacheItem->isHit()) {
+            return false;
         }
 
-        $this->cache->store($cacheKey, $target->serialize());
+        foreach ($cacheItem->getParents() as $parent) {
+            $this->invalidate($parent);
+        }
+
+        $staleItem = new StaleCacheItem();
+        $staleItem->setKey($cacheItem->getKey());
+        $staleItem->setParents($cacheItem->getParents());
+        $staleItem->setChildren($cacheItem->getChildren());
+
+        $cacheItem->set($staleItem);
+
+        return $this->cache->saveDeferred($cacheItem);
     }
 }
