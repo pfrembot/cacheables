@@ -82,3 +82,4 @@ fabric.properties
 bin/
 build/
 .idea/
+.composer.lock
